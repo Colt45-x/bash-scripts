@@ -13,15 +13,45 @@ save-bandit() {
     git push
 }
 
-save-scripts() {
+# --- INDIVIDUAL SCRIPT SYNC (Surgical Save) ---
+save-one() {
     cd ~/projects/bash-scripts
-    git status
-    echo -n "Script update reason? (e.g. 'Fixed weather API bug'): "
+    
+    # Check if a filename was provided
+    if [ -z "$1" ]; then
+        echo "Error: Please specify a filename (e.g., save-one weather)"
+        return 1
+    fi
+
+    # Check if the file actually exists
+    if [ ! -f "$1" ]; then
+        echo "Error: File '$1' not found in this folder."
+        return 1
+    fi
+
+    # Show the changes for just this file so you can remember what you did
+    git diff "$1"
+    
+    echo "--------------------------------"
+    echo -n "Commit reason for $1: "
     read reason
-    git add .
+    
+    git add "$1"
     git commit -m "$reason"
     git push
+    echo "Successfully synced $1 to GitHub."
 }
+
+# --- BULK SYNC (Commented out for now) ---
+#save-scripts() {
+#    cd ~/projects/bash-scripts
+#    git status
+#    echo -n "Script update reason? (e.g. 'Fixed weather API bug'): "
+#    read reason
+#    git add .
+#    git commit -m "$reason"
+#    git push
+#}
 
 # --- DEPLOYMENT SHORTCUT ---
 # This copies your lab script to your live bin folder instantly
