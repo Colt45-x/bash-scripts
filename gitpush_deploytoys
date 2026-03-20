@@ -30,3 +30,5 @@ deploy-script() {
     chmod +x ~/bin/"$1"
     echo "Deployed $1 to ~/bin/ and made it executable."
 }
+
+alias reload='source ~/.bashrc && echo "Environment reloaded!"'
