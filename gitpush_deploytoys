@@ -1,2 +1,32 @@
 #!/bin/bash
-# This is my automated deployment tool
+# This is my automated deployment tool - add it to your ~/.bashrc
+
+# --- SMART GIT SYNC FUNCTIONS ---
+
+save-bandit() {
+    cd ~/projects/bandit-notes
+    git status
+    echo -n "Bandit commit reason? (e.g. 'Finished Level 10'): "
+    read reason
+    git add .
+    git commit -m "$reason"
+    git push
+}
+
+save-scripts() {
+    cd ~/projects/bash-scripts
+    git status
+    echo -n "Script update reason? (e.g. 'Fixed weather API bug'): "
+    read reason
+    git add .
+    git commit -m "$reason"
+    git push
+}
+
+# --- DEPLOYMENT SHORTCUT ---
+# This copies your lab script to your live bin folder instantly
+deploy-script() {
+    cp -i ~/projects/bash-scripts/"$1" ~/bin/"$1"
+    chmod +x ~/bin/"$1"
+    echo "Deployed $1 to ~/bin/ and made it executable."
+}
