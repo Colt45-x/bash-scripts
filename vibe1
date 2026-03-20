@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+echo balls
+echo balls
+echo balls
+echo balls
+
+sleep 5
+
+cmatrix

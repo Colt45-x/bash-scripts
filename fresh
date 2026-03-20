@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Define some colors for a 2026 pro look
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Ask for password immediately (if needed)
+sudo -v
+
+echo -e "${BLUE}>>> Starting System Maintenance for colt45... You fucking bitch...${NC}"
+
+# 1. Update the package lists
+sudo apt update
+
+# 2. Upgrade all installed packages (-y means 'don't ask me')
+echo -e "${GREEN}>>> Upgrading packages... yuuuuppp let's get er' done${NC}"
+sudo apt upgrade -y
+
+# 3. Remove old, unused versions and kernels
+echo -e "${GREEN}>>> Cleaning up leftovers... you disgusting fuck${NC}"
+sudo apt autoremove -y
+sudo apt autoclean
+
+echo -e "${BLUE}>>> System is officially FRESH! YAY!!!!!!! shut up bitch${NC}"

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+{
+ansiweather -l Denver -u imperial -a true -s true -i true -w true -H true -d true;
+printf '%s\n\n' '-----------------------------------------------------------';
+ansiweather -l Denver -u imperial -F;
+
+printf "That's the weather "$USER"\n";
+}

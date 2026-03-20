@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# If no argument, print usage then exit
+if [ -z "$1" ]; then
+   echo "usage: bandit <level>"
+   exit 1
+fi
+
+# Use the first arugment as the level number
+level="$1"
+
+#Connect
+exec ssh "bandit${level}@bandit.labs.overthewire.org" -p 2220
+

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+#Here is your final "All-in-One" script. It combines the clean variable organization at the #top, the portability of the env shebang, input validation, and the sassy loop we discussed.
+
+#Save this in your ~/bin/ folder as getnum (or whatever name you prefer), and don't forget to #run chmod +x ~/bin/getnum to make it a real command!
+
+
+
+# --- 1. BRAIN-FRIENDLY DEFINITIONS ---
+# We use $1 to see if you provided a number when launching the script.
+# If you didn't, INPUT will be empty, which triggers the loop below.
+INPUT=$1
+NUMM=0
+
+# --- 2. THE IDIOT-PROOF LOOP ---
+# While INPUT is empty OR contains anything other than digits...
+while [[ -z "$INPUT" || ! $INPUT =~ ^[0-9]+$ ]]; do
+    
+    # If they tried and failed, give them a little sass
+    if [[ -n "$INPUT" ]]; then
+        echo -e "\nError: '$INPUT' is not a number, bumbass."
+    fi
+
+    # Ask for the number
+    read -p "Enter a number for $0: " INPUT
+done
+
+# --- 3. THE CALCULATION ---
+# Once we break the loop, we know for sure $INPUT is a number.
+NUMM=$INPUT
+DOUBLE=$(( NUMM * 2 ))
+
+# --- 4. THE CLEAN OUTPUT ---
+# Using printf for that specific spacing and manual newlines
+printf "\n=============================="
+printf "\nSUCCESS!"
+printf "\nYour number: %d" "$NUMM"
+printf "\nDoubled:     %d" "$DOUBLE"
+printf "\n==============================\n"

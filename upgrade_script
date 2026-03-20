@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+#
+# upgrade_script: Archive the current executable and promote a new file to the canonical name.
+#
+# Usage:
+#   upgrade_script <canonical_name> <new_file_path> [--keep-name] [--sha256 <digest>] [--dry-run]
+#
+# Examples:
+#   upgrade_script myscript ~/Downloads/myscript1.6
+#   upgrade_script myscript ~/Downloads/myscript-2026-03-10.sh --sha256 a1b2c3... --dry-run
+#   upgrade_script myscript ~/Downloads/myscript-1.7.sh --keep-name
+#
+# Behavior:
+#   - If an active script exists at ~/bin/<canonical_name>, it is archived into
+#     ~/bin/old_scripts/<active_basename>.<timestamp>
+#       * If ~/bin/<canonical_name> is a symlink, the real target’s basename
+#         is used in the archive filename.
+#       * This means archived files keep their real names plus a timestamp.
+#
+#   - By default, <new_file_path> is installed as ~/bin/<canonical_name>.
+#
+#   - When --keep-name is used:
+#         * <new_file_path> keeps its original filename (e.g., myscript1.6)
+#           and is copied into ~/bin/
+#         * A symlink ~/bin/<canonical_name> points to that kept-name file.
+#
+#   - The installed (or symlink target) file is ensured executable.
+#
+#   - Optional SHA256 verification is performed if --sha256 <digest> is supplied.
+#
+#   - --dry-run shows the operations without making changes.
+
+set -euo pipefail
+
+# --- Defaults ---
+BIN_DIR="${HOME}/bin"
+ARCHIVE_DIR="${BIN_DIR}/old_scripts"
+CANONICAL_NAME=""
+NEW_FILE=""
+KEEP_NAME="false"
+DRY_RUN="false"
+EXPECTED_SHA256=""
+
+# --- Helpers ---
+err() { printf "ERROR: %s\n" "$*" >&2; }
+info() { printf "INFO: %s\n" "$*\n"; }
+do_or_echo() {
+  # If DRY_RUN, just print the command; otherwise execute it
+  if [[ "$DRY_RUN" == "true" ]]; then
+    printf "[dry-run] %s\n" "$*"
+  else
+    eval "$@"
+  fi
+}
+
+usage() {
+  sed -n '1,60p' "$0" | sed 's/^# //;t;d'
+  exit 1
+}
+
+# --- Parse args ---
+if [[ $# -lt 2 ]]; then usage; fi
+CANONICAL_NAME="$1"; shift
+NEW_FILE="$1"; shift
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --keep-name) KEEP_NAME="true"; shift ;;
+    --dry-run)   DRY_RUN="true"; shift ;;
+    --sha256)    EXPECTED_SHA256="${2:-}"; shift 2 ;;
+    -h|--help)   usage ;;
+    *) err "Unknown option: $1"; usage ;;
+  esac
+done
+
+# --- Validate paths ---
+ACTIVE_PATH="${BIN_DIR}/${CANONICAL_NAME}"
+
+if [[ ! -e "$NEW_FILE" ]]; then
+  err "New file not found: $NEW_FILE"
+  exit 2
+fi
+
+if [[ ! -d "$BIN_DIR" ]]; then
+  info "Creating bin directory: $BIN_DIR"
+  do_or_echo "mkdir -p \"$BIN_DIR\""
+fi
+
+if [[ ! -d "$ARCHIVE_DIR" ]]; then
+  info "Creating archive directory: $ARCHIVE_DIR"
+  do_or_echo "mkdir -p \"$ARCHIVE_DIR\""
+fi
+
+# --- Optional integrity check ---
+if [[ -n "$EXPECTED_SHA256" ]]; then
+  if ! command -v sha256sum >/dev/null 2>&1; then
+    err "sha256sum not found; install coreutils or omit --sha256"
+    exit 3
+  fi
+  CALC_SHA256="$(sha256sum "$NEW_FILE" | awk '{print $1}')"
+  if [[ "$CALC_SHA256" != "$EXPECTED_SHA256" ]]; then
+    err "SHA256 mismatch for $NEW_FILE"
+    err " expected: $EXPECTED_SHA256"
+    err "   actual: $CALC_SHA256"
+    exit 4
+  else
+    info "SHA256 verified."
+  fi
+fi
+
+# --- Archive current active file if present ---
+TS="$(date +%Y%m%d-%H%M%S)"
+if [[ -e "$ACTIVE_PATH" ]]; then
+  # Resolve the actual filename we are archiving.
+  # If ACTIVE_PATH is a symlink, archive the symlink target's basename; otherwise the basename of ACTIVE_PATH.
+  if [[ -L "$ACTIVE_PATH" ]]; then
+    TARGET_REALPATH="$(readlink -f "$ACTIVE_PATH")"
+    ACTIVE_BASENAME="$(basename "$TARGET_REALPATH")"
+  else
+    ACTIVE_BASENAME="$(basename "$ACTIVE_PATH")"
+  fi
+
+  ARCHIVE_PATH="${ARCHIVE_DIR}/${ACTIVE_BASENAME}.${TS}"
+  info "Archiving current version: $ACTIVE_PATH -> $ARCHIVE_PATH"
+  do_or_echo "mv \"$ACTIVE_PATH\" \"$ARCHIVE_PATH\""
+else
+  info "No existing active script to archive for ${CANONICAL_NAME}."
+fi
+
+# --- Install new file ---
+if [[ "$KEEP_NAME" == "true" ]]; then
+  # Keep the original filename (e.g., myscript1.6)
+  NEW_BASENAME="$(basename "$NEW_FILE")"
+  TARGET_PATH="${BIN_DIR}/${NEW_BASENAME}"
+
+  info "Installing new file (keeping name): $NEW_FILE -> $TARGET_PATH"
+  do_or_echo "cp \"$NEW_FILE\" \"$TARGET_PATH\""
+
+  # Point stable entrypoint (~/bin/myscript) to the kept-name file
+  info "Pointing symlink ${ACTIVE_PATH} -> ${TARGET_PATH}"
+  do_or_echo "ln -sfn \"$TARGET_PATH\" \"$ACTIVE_PATH\""
+else
+  # Promote to canonical name (~/bin/myscript)
+  TARGET_PATH="$ACTIVE_PATH"
+  info "Installing new file as canonical name: $NEW_FILE -> $TARGET_PATH"
+  do_or_echo "cp \"$NEW_FILE\" \"$TARGET_PATH\""
+fi
+
+# --- Ensure executable ---
+info "Ensuring executable bit on $TARGET_PATH"
+do_or_echo "chmod +x \"$TARGET_PATH\""
+
+# --- Summary ---
+info "Upgrade complete for ${CANONICAL_NAME}."
+if [[ "$DRY_RUN" == "true" ]]; then
+  info "Dry-run mode: no changes were made."
+fi
+``
